@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   RefreshCw,
-  Check,
   FileText,
   MapPin,
   Target,
@@ -171,20 +170,22 @@ export function FormsExplorer() {
                       {form.status === "ACTIVE" ? "Activo" : form.status}
                     </Badge>
                   </div>
-                  <Button
-                    size="sm"
-                    variant={isOn ? "default" : "outline"}
+                  <button
                     onClick={() => toggle(form.id)}
-                    className="cursor-pointer shrink-0"
+                    className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium cursor-pointer transition-colors shrink-0 ${
+                      isOn
+                        ? "border-green-600 bg-green-50 text-green-700"
+                        : "border-input text-muted-foreground hover:bg-muted"
+                    }`}
+                    title={isOn ? "Clic para deshabilitar" : "Clic para habilitar"}
                   >
-                    {isOn ? (
-                      <>
-                        <Check className="h-4 w-4 mr-1" /> Usando
-                      </>
-                    ) : (
-                      "Usar este"
-                    )}
-                  </Button>
+                    <span
+                      className={`h-2.5 w-2.5 rounded-full ${
+                        isOn ? "bg-green-600" : "bg-muted-foreground/40"
+                      }`}
+                    />
+                    {isOn ? "Habilitado" : "No habilitado"}
+                  </button>
                 </CardHeader>
                 <CardContent>
                   {/* Asignar pipeline */}
