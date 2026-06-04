@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { contacts, activities } from "@/db/schema";
+import { contacts, activities, crmSettings } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 // GET: Facebook verifica que el webhook es tuyo
 export async function GET(request: NextRequest) {
@@ -41,9 +42,27 @@ export async function POST(request: NextRequest) {
     const changes = (entry?.changes as Array<Record<string, unknown>>)?.[0];
     const value = changes?.value as Record<string, unknown>;
     const leadId = value?.leadgen_id as string;
+    const formId = value?.form_id as string | undefined;
 
     if (!leadId) {
       return NextResponse.json({ received: true }, { status: 200 });
+    }
+
+    // Filtro: si el usuario eligió formularios específicos, ignorar el resto.
+    // Si la lista está vacía, se procesan TODOS (comportamiento por defecto).
+    const enabledSetting = db
+      .select()
+      .from(crmSettings)
+      .where(eq(crmSettings.key, "enabled_forms"))
+      .get();
+    if (enabledSetting && formId) {
+      const enabledIds: string[] = JSON.parse(enabledSetting.value);
+      if (enabledIds.length > 0 && !enabledIds.includes(formId)) {
+        return NextResponse.json(
+          { received: true, ignored: "formulario no habilitado" },
+          { status: 200 }
+        );
+      }
     }
 
     // Llamar a Graph API para obtener los datos reales del lead
