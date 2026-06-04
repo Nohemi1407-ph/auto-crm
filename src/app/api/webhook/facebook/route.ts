@@ -65,18 +65,53 @@ export async function POST(request: NextRequest) {
     const fields: Record<string, string> = {};
     const fieldMap: Record<string, string> = {
       full_name: "name",
+      nombre: "name",
+      nombre_completo: "name",
       first_name: "firstName",
+      nombre_de_pila: "firstName",
       last_name: "lastName",
+      apellido: "lastName",
+      apellidos: "lastName",
       email: "email",
+      correo: "email",
+      correo_electronico: "email",
       phone_number: "phone",
       phone: "phone",
+      telefono: "phone",
+      celular: "phone",
+      whatsapp: "phone",
       company_name: "company",
       company: "company",
+      empresa: "company",
+      negocio: "company",
     };
 
+    // Normaliza el nombre del campo (quita acentos, signos, espacios)
+    const normalize = (s: string) =>
+      s
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .replace(/[¿?¡!]/g, "")
+        .trim()
+        .replace(/\s+/g, "_");
+
+    // Guarda todas las respuestas del formulario para no perder nada
+    const extraAnswers: string[] = [];
+
     for (const field of leadData.field_data) {
-      const key = fieldMap[field.name] ?? field.name;
-      fields[key] = field.values[0] ?? "";
+      const rawName = field.name;
+      const norm = normalize(rawName);
+      const value = field.values[0] ?? "";
+      const mapped = fieldMap[norm];
+      if (mapped) {
+        fields[mapped] = value;
+      } else {
+        // Pregunta personalizada del formulario -> va a las notas
+        const label = rawName.replace(/_/g, " ").trim();
+        const cleanValue = value.replace(/_/g, " ").trim();
+        extraAnswers.push(`• ${label}: ${cleanValue}`);
+      }
     }
 
     // Combinar first_name + last_name si no hay full_name
@@ -94,6 +129,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Construir notas con TODA la info del formulario
+    const notesParts = ["Lead de Facebook Instant Form"];
+    if (extraAnswers.length > 0) {
+      notesParts.push("", "Respuestas del formulario:", ...extraAnswers);
+    }
+    notesParts.push("", `Lead ID: ${leadId}`);
+    const fullNotes = notesParts.join("\n");
+
     const now = new Date();
     const contact = db
       .insert(contacts)
@@ -105,7 +148,7 @@ export async function POST(request: NextRequest) {
         source: "facebook_lead",
         temperature: "warm",
         score: 50,
-        notes: `Lead de Facebook Instant Form. Lead ID: ${leadId}`,
+        notes: fullNotes,
         createdAt: now,
         updatedAt: now,
       })

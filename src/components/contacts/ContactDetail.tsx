@@ -237,7 +237,7 @@ export function ContactDetailClient({
             </div>
             {contact.notes && (
               <div className="pt-2 border-t">
-                <p className="text-sm text-muted-foreground">{contact.notes}</p>
+                <p className="text-sm text-muted-foreground whitespace-pre-line">{contact.notes}</p>
               </div>
             )}
           </CardContent>
